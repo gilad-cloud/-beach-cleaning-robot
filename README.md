@@ -3,3 +3,4 @@ Autonomous mode:
 [AutonomusMode.ino](AutonomusMode/AutonomusMode.ino)
 Manual mode: The user controls the robot using a remote
 [manual.ino](manual/manual.ino)
+Experience with gps-neo-6m.
