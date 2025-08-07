@@ -38,9 +38,8 @@ const unsigned long printInterval = 50;
 
 // Obstacle detection and avoidance variables
 int avoidState = AVOID_TURNING, clearCounter = 0, obstacleCounter = 0;
-unsigned long avoidStartTime = 0, detourStartTime = 0, obstacleStartTime = 0;
-int avoidStartAzimuth = 0, avoidReturnAzimuth = 0;
-
+unsigned long avoidStartTime = 0, obstacleStartTime = 0;
+int avoidStartAzimuth = 0;
 // General control and state variables
 String command = "";
 unsigned long now_time = 0, start_time = 0, phase_start_time = 0, last_receive_time = 0, return_drive_start_time = 0;
@@ -138,7 +137,6 @@ void loop() {
       current_phase = OBSTACLE_AVOIDANCE;
       stop(); // Stop all motors
       clearCounter = 0; 
-      detourStartTime = millis();
       obstacleCounter = 0;
       compass.read();  // Get heading to return to
       avoidStartAzimuth = compass.getAzimuth();
@@ -272,8 +270,6 @@ void obstacleAvoidance(int currentAzimuth) {
   switch (avoidState) {
     case AVOID_TURNING:
       // Turn until path ahead is clear (detour turning phase)
-      analogWrite(enA, 255); analogWrite(enB, 255);
-      analogWrite(enC, 255); analogWrite(enD, 255);
       if (readUltrasonic(trigLeft, echoLeft) < 20 || readUltrasonic(trigRight, echoRight) < 20) {
         clearCounter = 0; right();
       } else {
@@ -287,19 +283,18 @@ void obstacleAvoidance(int currentAzimuth) {
       break;
     case AVOID_STRAIGHT_DRIVE:
       // Drive straight forward for a fixed time after detour
-      analogWrite(enA, 255); analogWrite(enB, 255);
-      analogWrite(enC, 255); analogWrite(enD, 255);
       if (millis() - avoidStartTime < 1000) forward();
       else {
-        stop(); avoidReturnAzimuth = avoidStartAzimuth;
+        stop();
         avoidState = AVOID_RETURN;
       }
       break;
     case AVOID_RETURN:
       // Re-align to original azimuth after avoidance
-      compass.read(); currentAzimuth = compass.getAzimuth();
+      compass.read();
+      currentAzimuth = compass.getAzimuth();
       if (currentAzimuth < 0) currentAzimuth += 360;
-      if (rotateToTarget(currentAzimuth, avoidReturnAzimuth)) {
+      if (rotateToTarget(currentAzimuth, avoidStartAzimuth)) {
         stop();
         // Compensate timing so path remains accurate
         unsigned long avoidDuration = millis() - obstacleStartTime;
@@ -307,7 +302,8 @@ void obstacleAvoidance(int currentAzimuth) {
         phase_start_time += avoidDuration; // Resume previous phase
         return_drive_start_time += avoidDuration;
         current_phase = preObstaclePhase;
-        avoidState = AVOID_TURNING; obstacleCounter = 0;
+        avoidState = AVOID_TURNING;
+        obstacleCounter = 0;
       }
       break;
   }
@@ -328,8 +324,6 @@ bool rotateToTarget(int currentAzimuth, int targetAzimuth) {
   if (error < -180) error += 360;
   // If error is large enough, keep rotating
   if (abs(error) > 2) {
-    analogWrite(enA, 255); analogWrite(enD, 255);
-    analogWrite(enB, 255); analogWrite(enC, 255);
     (error > 0) ? right() : left(); // Rotate right if error positive, left if negative
     // Not yet at the target, return false
     return false;
@@ -350,12 +344,16 @@ void forward() {
   digitalWrite(inB3, LOW);  digitalWrite(inB4, HIGH);
 }
 void left() {
+  analogWrite(enA, PWM); analogWrite(enD, PWM);
+  analogWrite(enB, PWM); analogWrite(enC, PWM);
   digitalWrite(inA1, HIGH); digitalWrite(inA2, LOW);
   digitalWrite(inD3, HIGH); digitalWrite(inD4, LOW);
   digitalWrite(inC1, HIGH); digitalWrite(inC2, LOW);
   digitalWrite(inB3, HIGH); digitalWrite(inB4, LOW);
 }
 void right() {
+  analogWrite(enA, PWM); analogWrite(enD, PWM);
+  analogWrite(enB, PWM); analogWrite(enC, PWM);
   digitalWrite(inA1, LOW); digitalWrite(inA2, HIGH);
   digitalWrite(inD3, LOW); digitalWrite(inD4, HIGH);
   digitalWrite(inC1, LOW); digitalWrite(inC2, HIGH);
