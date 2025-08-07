@@ -234,7 +234,8 @@ void runPIDDrive(int refAzimuth, unsigned long duration, unsigned long startTime
     D = kd * (error - prev_error) / dt;
     PID_PWM = constrain(P + I + D, -120, 120);
 
-    prev_error = error; lastPIDTime = now;
+    prev_error = error;
+    lastPIDTime = now;
     
     // Apply PID correction to motor speeds
     int basePWM = 170;
@@ -373,3 +374,4 @@ void stopRoller() {
   digitalWrite(inE1, LOW); 
   digitalWrite(inE2, LOW);
 }
+
